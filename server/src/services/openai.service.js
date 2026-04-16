@@ -28,12 +28,24 @@ export const generateRoadmap = async (career, skills, profile) => {
       { role: 'system', content: PROMPTS.ROADMAP_GENERATOR_SYSTEM },
       {
         role: 'user',
-        content: `Generate a detailed 6-phase learning roadmap for:
+        content: `Generate a 6-phase learning roadmap as a JSON object.
+
 Career Goal: ${career}
 Current Skills: ${skills.join(', ')}
-Education: ${profile.educationLevel}
-Interests: ${profile.interests.join(', ')}
-Return valid JSON with phases array.`
+Education: ${profile.educationLevel || 'undergraduate'}
+Interests: ${(profile.interests || []).join(', ')}
+
+STRICT RULES — breaking these will cause a system error:
+1. Return ONLY a JSON object with a "roadmap" key
+2. "roadmap" must be an array of exactly 6 phase objects
+3. Each phase: { "phase": number, "title": string, "description": string, "duration": string, "resources": array }
+4. "resources" MUST be a real JSON array — NEVER a string
+5. Each resource: { "title": string, "url": string, "type": "course"|"book"|"video"|"project", "free": boolean }
+6. Use DOUBLE QUOTES everywhere — never single quotes
+7. No trailing commas, no comments
+
+Example of ONE correct resource object:
+{"title": "CS50", "url": "https://cs50.harvard.edu", "type": "course", "free": true}`
       }
     ],
     response_format: { type: 'json_object' },

@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Sparkles, Brain, Target, Map, Trophy, Check, X, Mic } from 'lucide-react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { setCredentials } from '../store/slices/authSlice';
+import { useDispatch } from 'react-redux';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 
@@ -60,30 +61,42 @@ function FeatureCard({ title, description, icon: Icon, className = '', delay = 0
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.8, delay }}
-      className={`glass p-8 rounded-[2rem] flex flex-col justify-between group transition-all duration-500 ${className}`}
-      style={{ cursor: 'default' }}
-      whileHover={{ background: 'rgba(255,255,255,0.05)' }}
+      whileHover={{ y: -4 }}
+      className={`group relative overflow-hidden ${className}`}
+      style={{
+        background: 'rgba(255,255,255,0.02)',
+        border: '1px solid rgba(255,255,255,0.06)',
+        borderRadius: '28px',
+        padding: '36px',
+        cursor: 'default',
+        transition: 'all 0.4s ease',
+      }}
     >
-      <div className="space-y-5">
-        <div className="w-12 h-12 rounded-2xl glass flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-          <Icon className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.55)' }} />
+      {/* Hover gradient */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+        style={{ background: 'radial-gradient(circle at 50% 0%, rgba(112,161,255,0.06) 0%, transparent 70%)' }} />
+
+      {/* Icon */}
+      <div className="mb-6 relative">
+        <div className="w-11 h-11 rounded-2xl flex items-center justify-center"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <Icon className="w-5 h-5 group-hover:scale-110 transition-transform duration-300"
+            style={{ color: 'rgba(255,255,255,0.5)' }} />
         </div>
-        <h3
-          className="font-display font-medium tracking-tight"
-          style={{ fontSize: 'clamp(1.25rem, 2vw, 1.6rem)', color: 'rgba(255,255,255,0.88)' }}
-        >
-          {title}
-        </h3>
-        <p style={{ color: 'rgba(255,255,255,0.32)', lineHeight: 1.7, fontWeight: 300, fontSize: '0.9rem' }}>
-          {description}
-        </p>
       </div>
-      <div className="mt-8 h-28 w-full rounded-2xl relative overflow-hidden"
-        style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.03)' }}>
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.02), transparent)' }} />
-        <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full blur-3xl"
-          style={{ background: 'rgba(112,161,255,0.08)' }} />
-      </div>
+
+      {/* Text */}
+      <h3 className="font-display font-medium mb-3 group-hover:text-white transition-colors"
+        style={{ fontSize: 'clamp(1.1rem, 2vw, 1.4rem)', color: 'rgba(255,255,255,0.85)', lineHeight: 1.2 }}>
+        {title}
+      </h3>
+      <p style={{ color: 'rgba(255,255,255,0.28)', lineHeight: 1.75, fontWeight: 300, fontSize: '0.875rem' }}>
+        {description}
+      </p>
+
+      {/* Bottom decorative bar */}
+      <div className="absolute bottom-0 left-0 right-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(112,161,255,0.4), transparent)' }} />
     </motion.div>
   );
 }

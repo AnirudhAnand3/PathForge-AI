@@ -3,45 +3,63 @@ import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
+import { Upload, FileText, Trash2 } from 'lucide-react';
 
-const ScoreBar = ({ label, score, suggestion }) => (
-  <div className="mb-4">
-    <div className="flex justify-between items-center mb-1">
-      <span className="text-sm text-gray-300 font-medium">{label}</span>
-      <span className={`text-sm font-bold ${score >= 80 ? 'text-green-400' : score >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>{score}/100</span>
+const ScoreRing = ({ score, size = 80 }) => {
+  const r   = size / 2 - 6;
+  const circ = 2 * Math.PI * r;
+  const pct  = (score / 100) * circ;
+  const color = score >= 80 ? '#26de81' : score >= 60 ? '#fd9644' : '#fc5c65';
+  return (
+    <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" />
+      <motion.circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth="5"
+        strokeLinecap="round" strokeDasharray={circ}
+        initial={{ strokeDashoffset: circ }}
+        animate={{ strokeDashoffset: circ - pct }}
+        transition={{ duration: 1.2, ease: 'easeOut' }} />
+    </svg>
+  );
+};
+
+const ScoreBar = ({ label, score, suggestion }) => {
+  const color = score >= 80 ? '#26de81' : score >= 60 ? '#fd9644' : '#fc5c65';
+  return (
+    <div style={{ marginBottom: '16px' }}>
+      <div className="flex justify-between items-center mb-2">
+        <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', textTransform: 'capitalize' }}>{label}</span>
+        <span style={{ fontSize: '0.85rem', fontWeight: 600, color }}>{score}/100</span>
+      </div>
+      <div className="w-full rounded-full overflow-hidden" style={{ height: '4px', background: 'rgba(255,255,255,0.07)' }}>
+        <motion.div initial={{ width: 0 }} animate={{ width: `${score}%` }}
+          transition={{ duration: 1, delay: 0.3 }}
+          className="h-full rounded-full" style={{ background: color }} />
+      </div>
+      {suggestion && <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.28)', marginTop: '4px' }}>💡 {suggestion}</p>}
     </div>
-    <div className="w-full h-2 bg-dark-border rounded-full overflow-hidden">
-      <motion.div initial={{ width: 0 }} animate={{ width: `${score}%` }} transition={{ duration: 1, delay: 0.3 }}
-        className={`h-full rounded-full ${score >= 80 ? 'bg-green-500' : score >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`} />
-    </div>
-    {suggestion && <p className="text-xs text-gray-500 mt-1">💡 {suggestion}</p>}
-  </div>
-);
+  );
+};
 
 export default function ResumeAnalyzer() {
   const [uploading, setUploading] = useState(false);
-  const [analysis, setAnalysis] = useState(null);
+  const [analysis, setAnalysis]   = useState(null);
 
-  const onDrop = useCallback(async (acceptedFiles) => {
-    const file = acceptedFiles[0];
+  const onDrop = useCallback(async (files) => {
+    const file = files[0];
     if (!file) return;
-
     const formData = new FormData();
     formData.append('resume', file);
-
     setUploading(true);
-    const toastId = toast.loading('🔍 Analyzing your resume with AI...');
+    const id = toast.loading('🔍 Analyzing your resume with AI...');
     try {
       const { data } = await api.post('/resume/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       setAnalysis(data.resume);
-      toast.success(`Analysis complete! ATS Score: ${data.resume.atsScore}/100`, { id: toastId });
+      toast.success(`Done! ATS Score: ${data.resume.atsScore}/100`, { id });
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Upload failed', { id: toastId });
-    } finally {
-      setUploading(false);
-    }
+      toast.error(err.response?.data?.message || 'Upload failed', { id });
+    } finally { setUploading(false); }
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -49,93 +67,121 @@ export default function ResumeAnalyzer() {
   });
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-display font-bold text-white mb-2">Resume Intelligence</h1>
-        <p className="text-gray-400">AI-powered ATS scoring, keyword optimization, and professional feedback</p>
-      </div>
+    <div style={{ padding: '32px', maxWidth: '900px', margin: '0 auto' }}>
 
-      {/* Dropzone */}
+      <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+        <h1 className="font-display font-medium text-white mb-2" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.5rem)' }}>
+          Resume <span className="font-serif italic font-light" style={{ opacity: 0.7 }}>Intelligence.</span>
+        </h1>
+        <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.9rem' }}>
+          AI-powered ATS scoring, keyword gap analysis, and professional rewrites
+        </p>
+      </motion.div>
+
       {!analysis && (
         <motion.div {...getRootProps()} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className={`border-2 border-dashed rounded-2xl p-16 text-center cursor-pointer transition-all ${
-            isDragActive ? 'border-brand-500 bg-brand-900/20' : 'border-dark-border hover:border-brand-500/50 hover:bg-dark-card'
-          }`}>
+          whileHover={{ borderColor: 'rgba(112,161,255,0.3)' }}
+          style={{
+            border: `2px dashed ${isDragActive ? 'rgba(112,161,255,0.5)' : 'rgba(255,255,255,0.1)'}`,
+            background: isDragActive ? 'rgba(112,161,255,0.05)' : 'rgba(255,255,255,0.02)',
+            borderRadius: '24px', padding: '80px 24px', textAlign: 'center', cursor: 'pointer',
+            transition: 'all 0.3s ease',
+          }}>
           <input {...getInputProps()} />
-          <div className="text-5xl mb-4">{uploading ? '⏳' : '📄'}</div>
-          <h3 className="text-xl font-semibold text-white mb-2">
-            {uploading ? 'Analyzing with AI...' : isDragActive ? 'Drop it here!' : 'Drop your resume (PDF)'}
+          <div style={{ fontSize: '3rem', marginBottom: '16px' }}>{uploading ? '⏳' : '📄'}</div>
+          <h3 className="font-display font-medium text-white mb-2" style={{ fontSize: '1.3rem' }}>
+            {uploading ? 'Analyzing with GPT-4o...' : isDragActive ? 'Drop it here' : 'Drop your resume'}
           </h3>
-          <p className="text-gray-400 text-sm">or click to browse • PDF only • Max 10MB</p>
+          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem' }}>
+            PDF only · Max 10MB · Text-based PDFs only (not scanned)
+          </p>
+          {!uploading && (
+            <button style={{ marginTop: '24px', padding: '10px 24px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', cursor: 'pointer' }}>
+              Or click to browse
+            </button>
+          )}
         </motion.div>
       )}
 
-      {/* Analysis Results */}
       <AnimatePresence>
         {analysis && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
             {/* Score cards */}
             <div className="grid grid-cols-2 gap-4">
               {[
-                { label: 'ATS Score', value: analysis.atsScore, desc: 'Applicant Tracking System', color: analysis.atsScore >= 80 ? 'text-green-400' : 'text-yellow-400' },
-                { label: 'Overall Score', value: analysis.overallScore, desc: 'Human recruiter impression', color: 'text-brand-400' },
-              ].map((card, i) => (
-                <motion.div key={i} initial={{ scale: 0.9 }} animate={{ scale: 1 }} transition={{ delay: i * 0.1 }}
-                  className="bg-dark-card border border-dark-border rounded-2xl p-6 text-center">
-                  <div className={`text-5xl font-bold ${card.color} mb-2`}>{card.value}</div>
-                  <div className="text-sm font-semibold text-white">{card.label}</div>
-                  <div className="text-xs text-gray-400">{card.desc}</div>
-                </motion.div>
-              ))}
+                { label: 'ATS Score', value: analysis.atsScore, sub: 'Applicant Tracking System' },
+                { label: 'Overall Score', value: analysis.overallScore, sub: 'Human recruiter impression' },
+              ].map((card, i) => {
+                const color = card.value >= 80 ? '#26de81' : card.value >= 60 ? '#fd9644' : '#fc5c65';
+                return (
+                  <motion.div key={i} initial={{ scale: 0.9 }} animate={{ scale: 1 }} transition={{ delay: i * 0.1 }}
+                    style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', padding: '28px', display: 'flex', alignItems: 'center', gap: '20px' }}>
+                    <div style={{ position: 'relative' }}>
+                      <ScoreRing score={card.value} />
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ fontSize: '1.1rem', fontWeight: 700, color }}>{card.value}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600, color: 'white', fontSize: '1rem' }}>{card.label}</div>
+                      <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.78rem', marginTop: '2px' }}>{card.sub}</div>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
 
-            {/* Section scores */}
-            <div className="bg-dark-card border border-dark-border rounded-2xl p-6">
-              <h3 className="font-semibold text-white mb-5">Section-by-Section Analysis</h3>
+            {/* Section analysis */}
+            <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', padding: '28px' }}>
+              <h3 style={{ fontWeight: 600, color: 'white', marginBottom: '20px' }}>Section Analysis</h3>
               {Object.entries(analysis.sections || {}).map(([section, data]) => (
-                <ScoreBar key={section} label={section.charAt(0).toUpperCase() + section.slice(1)}
-                  score={data.quality} suggestion={data.suggestion} />
+                <ScoreBar key={section}
+                  label={section.charAt(0).toUpperCase() + section.slice(1)}
+                  score={data.quality || 0}
+                  suggestion={data.suggestion} />
               ))}
             </div>
 
-            {/* Strengths & improvements */}
+            {/* Strengths + Improvements */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-dark-card border border-green-500/20 rounded-2xl p-5">
-                <h3 className="font-semibold text-green-400 mb-3">✅ Strengths</h3>
-                <ul className="space-y-2">
-                  {analysis.strengths?.map((s, i) => <li key={i} className="text-sm text-gray-300">• {s}</li>)}
-                </ul>
+              <div style={{ background: 'rgba(38,222,129,0.04)', border: '1px solid rgba(38,222,129,0.12)', borderRadius: '20px', padding: '24px' }}>
+                <h3 style={{ color: '#26de81', fontWeight: 600, marginBottom: '12px', fontSize: '0.9rem' }}>✅ Strengths</h3>
+                {(analysis.strengths || []).length > 0
+                  ? analysis.strengths.map((s, i) => <p key={i} style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.83rem', marginBottom: '6px' }}>• {s}</p>)
+                  : <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.83rem' }}>Complete more sections</p>}
               </div>
-              <div className="bg-dark-card border border-red-500/20 rounded-2xl p-5">
-                <h3 className="font-semibold text-red-400 mb-3">⚠️ Improvements</h3>
-                <ul className="space-y-2">
-                  {analysis.improvements?.map((s, i) => <li key={i} className="text-sm text-gray-300">• {s}</li>)}
-                </ul>
+              <div style={{ background: 'rgba(252,92,101,0.04)', border: '1px solid rgba(252,92,101,0.12)', borderRadius: '20px', padding: '24px' }}>
+                <h3 style={{ color: '#fc5c65', fontWeight: 600, marginBottom: '12px', fontSize: '0.9rem' }}>⚠️ Improvements</h3>
+                {(analysis.improvements || []).length > 0
+                  ? analysis.improvements.map((s, i) => <p key={i} style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.83rem', marginBottom: '6px' }}>• {s}</p>)
+                  : <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.83rem' }}>Looking good!</p>}
               </div>
             </div>
 
             {/* Missing keywords */}
             {analysis.missingKeywords?.length > 0 && (
-              <div className="bg-dark-card border border-dark-border rounded-2xl p-5">
-                <h3 className="font-semibold text-white mb-3">🔑 Missing Keywords (Add these!)</h3>
+              <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', padding: '24px' }}>
+                <h3 style={{ fontWeight: 600, color: 'white', marginBottom: '14px', fontSize: '0.9rem' }}>🔑 Add These Keywords</h3>
                 <div className="flex flex-wrap gap-2">
                   {analysis.missingKeywords.map((kw, i) => (
-                    <span key={i} className="px-3 py-1 bg-yellow-900/30 border border-yellow-500/30 rounded-full text-yellow-300 text-sm">{kw}</span>
+                    <span key={i} style={{ padding: '5px 14px', background: 'rgba(253,150,68,0.1)', border: '1px solid rgba(253,150,68,0.2)', borderRadius: '99px', color: '#fd9644', fontSize: '0.8rem' }}>{kw}</span>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* AI-rewritten summary */}
-            {analysis.rewrittenSummary && (
-              <div className="bg-gradient-to-br from-brand-900/30 to-purple-900/30 border border-brand-500/20 rounded-2xl p-5">
-                <h3 className="font-semibold text-brand-300 mb-3">✨ AI-Rewritten Professional Summary</h3>
-                <p className="text-gray-200 text-sm leading-relaxed italic">"{analysis.rewrittenSummary}"</p>
+            {/* AI rewritten summary */}
+            {analysis.rewrittenSummary && analysis.rewrittenSummary !== 'Rewritten professional summary' && (
+              <div style={{ background: 'linear-gradient(135deg, rgba(112,161,255,0.06), rgba(165,94,234,0.06))', border: '1px solid rgba(112,161,255,0.15)', borderRadius: '20px', padding: '24px' }}>
+                <h3 style={{ color: '#70a1ff', fontWeight: 600, marginBottom: '12px', fontSize: '0.9rem' }}>✨ AI-Rewritten Summary</h3>
+                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.88rem', lineHeight: 1.75, fontStyle: 'italic' }}>
+                  "{analysis.rewrittenSummary}"
+                </p>
               </div>
             )}
 
             <button onClick={() => setAnalysis(null)}
-              className="w-full py-3 border border-dark-border rounded-xl text-gray-400 hover:text-white hover:border-gray-500 transition-all text-sm">
+              style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'none', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '0.85rem' }}>
               Analyze another resume
             </button>
           </motion.div>

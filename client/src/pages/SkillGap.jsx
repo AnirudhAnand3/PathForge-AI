@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import api from '../api/axios';
-import Badge from '../components/ui/Badge';
 import Loader from '../components/ui/Loader';
 import toast from 'react-hot-toast';
 
@@ -9,7 +8,7 @@ export default function SkillGap() {
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading]   = useState(false);
 
-  const runAnalysis = async () => {
+  const run = async () => {
     setLoading(true);
     try {
       const { data } = await api.get('/career/skill-gap');
@@ -18,93 +17,106 @@ export default function SkillGap() {
     finally { setLoading(false); }
   };
 
-  const importanceVariant = (imp) =>
-    imp === 'critical' ? 'danger' : imp === 'important' ? 'warning' : 'default';
+  const impColor = (imp) =>
+    imp === 'critical' ? '#fc5c65' : imp === 'important' ? '#fd9644' : '#70a1ff';
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-3xl font-display font-bold text-white mb-2">Skill Gap Analysis</h1>
-        <p className="text-gray-400">Discover exactly what skills you need to land your dream career</p>
-      </div>
+    <div style={{ padding: '32px', maxWidth: '900px', margin: '0 auto' }}>
+      <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+        <h1 className="font-display font-medium text-white mb-2" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.5rem)' }}>
+          Skill Gap <span className="font-serif italic font-light" style={{ opacity: 0.7 }}>Analysis.</span>
+        </h1>
+        <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.9rem' }}>
+          Discover exactly what to learn next to land your dream role
+        </p>
+      </motion.div>
 
       {!analysis && !loading && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          className="bg-dark-card border border-dark-border rounded-2xl p-12 text-center">
-          <div className="text-5xl mb-4">🎯</div>
-          <h2 className="text-xl font-bold text-white mb-2">Ready for your skill gap report?</h2>
-          <p className="text-gray-400 mb-6">AI will compare your current skills against industry requirements for your target career</p>
-          <button onClick={runAnalysis}
-            className="px-8 py-3 bg-gradient-to-r from-brand-600 to-purple-600 rounded-xl font-semibold text-white hover:scale-105 transition-all">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '24px', padding: '80px 24px', textAlign: 'center' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🎯</div>
+          <h2 className="font-display font-medium text-white mb-3" style={{ fontSize: '1.5rem' }}>Ready for your report?</h2>
+          <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.9rem', marginBottom: '28px' }}>
+            AI will compare your current skills against industry requirements for your target career
+          </p>
+          <button onClick={run}
+            style={{ padding: '13px 32px', background: 'white', color: 'black', borderRadius: '12px', fontWeight: 600, border: 'none', cursor: 'pointer', fontSize: '0.9rem' }}>
             Run Analysis →
           </button>
         </motion.div>
       )}
 
-      {loading && (
-        <div className="flex items-center justify-center py-24">
-          <Loader size="lg" text="Analyzing your skill gaps with AI..." />
-        </div>
-      )}
+      {loading && <div className="flex items-center justify-center py-32"><Loader size="lg" text="Analyzing your skill gaps with AI..." /></div>}
 
       {analysis && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
+
           {/* Gap score */}
-          <div className="bg-dark-card border border-dark-border rounded-2xl p-6">
+          <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', padding: '28px' }}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white">Gap Score</h2>
-              <span className={`text-3xl font-bold ${analysis.gapScore > 50 ? 'text-red-400' : 'text-green-400'}`}>
-                {analysis.gapScore}/100
-              </span>
+              <div>
+                <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.72rem', letterSpacing: '0.1em', marginBottom: '4px' }}>GAP SCORE</div>
+                <div className="font-display font-medium" style={{ fontSize: '3rem', lineHeight: 1, color: analysis.gapScore > 50 ? '#fc5c65' : '#26de81' }}>
+                  {analysis.gapScore}
+                  <span style={{ fontSize: '1rem', opacity: 0.5 }}>/100</span>
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.75rem', marginBottom: '4px' }}>Ready in</div>
+                <div style={{ color: '#70a1ff', fontWeight: 600 }}>{analysis.estimatedReadyDate}</div>
+                <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.75rem' }}>{analysis.weeklyHoursNeeded}h/week</div>
+              </div>
             </div>
-            <div className="w-full h-3 bg-dark-border rounded-full overflow-hidden">
+            <div className="w-full rounded-full overflow-hidden" style={{ height: '6px', background: 'rgba(255,255,255,0.07)' }}>
               <motion.div initial={{ width: 0 }} animate={{ width: `${analysis.gapScore}%` }} transition={{ duration: 1.5 }}
-                className={`h-full rounded-full ${analysis.gapScore > 50 ? 'bg-red-500' : 'bg-green-500'}`} />
+                className="h-full rounded-full"
+                style={{ background: analysis.gapScore > 50 ? 'linear-gradient(90deg, #fc5c65, #fd9644)' : '#26de81' }} />
             </div>
-            <p className="text-sm text-gray-400 mt-3">
-              Ready in approximately <span className="text-brand-400 font-semibold">{analysis.estimatedReadyDate}</span> with <span className="text-brand-400 font-semibold">{analysis.weeklyHoursNeeded}h/week</span> of study
-            </p>
           </div>
 
           {/* Critical gaps */}
-          <div className="bg-dark-card border border-dark-border rounded-2xl p-6">
-            <h2 className="text-lg font-semibold text-white mb-4">Skills to Learn</h2>
-            <div className="space-y-4">
+          <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', padding: '28px' }}>
+            <h3 style={{ fontWeight: 600, color: 'white', marginBottom: '16px' }}>Skills to Learn</h3>
+            <div className="space-y-3">
               {analysis.criticalGaps?.map((gap, i) => (
-                <div key={i} className="flex items-center justify-between p-4 bg-dark-bg rounded-xl border border-dark-border">
+                <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }}
+                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '14px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                   <div className="flex items-center gap-3">
-                    <Badge variant={importanceVariant(gap.importance)}>{gap.importance}</Badge>
+                    <span style={{ padding: '3px 10px', borderRadius: '99px', fontSize: '0.7rem', fontWeight: 600, background: `${impColor(gap.importance)}18`, color: impColor(gap.importance), border: `1px solid ${impColor(gap.importance)}30` }}>
+                      {gap.importance}
+                    </span>
                     <div>
-                      <div className="text-sm font-medium text-white">{gap.skill}</div>
-                      <div className="text-xs text-gray-400">~{gap.timeToLearn} to learn</div>
+                      <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem', fontWeight: 500 }}>{gap.skill}</div>
+                      <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.75rem' }}>~{gap.timeToLearn} to learn</div>
                     </div>
                   </div>
                   {gap.resources?.[0]?.url && (
                     <a href={gap.resources[0].url} target="_blank" rel="noopener noreferrer"
-                      className="text-xs text-brand-400 hover:text-brand-300">Learn →</a>
+                      style={{ color: '#70a1ff', fontSize: '0.8rem', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                      Learn →
+                    </a>
                   )}
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>
 
-          {/* Learning path */}
+          {/* Priority path */}
           {analysis.priorityLearningPath?.length > 0 && (
-            <div className="bg-dark-card border border-dark-border rounded-2xl p-6">
-              <h2 className="text-lg font-semibold text-white mb-4">Priority Learning Path</h2>
+            <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', padding: '28px' }}>
+              <h3 style={{ fontWeight: 600, color: 'white', marginBottom: '16px' }}>Priority Learning Path</h3>
               <div className="flex flex-wrap items-center gap-2">
                 {analysis.priorityLearningPath.map((skill, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <span className="px-3 py-1.5 bg-brand-900/30 border border-brand-500/20 rounded-full text-sm text-brand-300">{skill}</span>
-                    {i < analysis.priorityLearningPath.length - 1 && <span className="text-gray-600">→</span>}
+                    <span style={{ padding: '6px 16px', background: 'rgba(112,161,255,0.08)', border: '1px solid rgba(112,161,255,0.18)', borderRadius: '99px', color: '#70a1ff', fontSize: '0.82rem' }}>{skill}</span>
+                    {i < analysis.priorityLearningPath.length - 1 && <span style={{ color: 'rgba(255,255,255,0.2)' }}>→</span>}
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          <button onClick={runAnalysis}
-            className="w-full py-3 border border-dark-border rounded-xl text-gray-400 hover:text-white hover:border-gray-500 transition-all text-sm">
+          <button onClick={run} style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'none', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '0.85rem' }}>
             Re-run analysis
           </button>
         </motion.div>
